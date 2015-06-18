@@ -187,49 +187,6 @@ glamor_egl_get_gbm_device(ScreenPtr screen)
 #endif
 }
 
-unsigned int
-glamor_egl_create_argb8888_based_texture(ScreenPtr screen, int w, int h, Bool linear)
-{
-    ScrnInfoPtr scrn = xf86ScreenToScrn(screen);
-    struct glamor_egl_screen_private *glamor_egl;
-    EGLImageKHR image;
-    GLuint texture;
-
-#ifdef GLAMOR_HAS_GBM
-    struct gbm_bo *bo;
-    EGLNativePixmapType native_pixmap;
-
-    glamor_egl = glamor_egl_get_screen_private(scrn);
-    bo = gbm_bo_create(glamor_egl->gbm, w, h, GBM_FORMAT_ARGB8888,
-#ifdef GLAMOR_HAS_GBM_LINEAR
-                       (linear ? GBM_BO_USE_LINEAR : 0) |
-#endif
-                       GBM_BO_USE_RENDERING | GBM_BO_USE_SCANOUT);
-    if (!bo)
-        return 0;
-
-    /* If the following assignment raises an error or a warning
-     * then that means EGLNativePixmapType is not struct gbm_bo *
-     * on your platform: This code won't work and you should not
-     * compile with dri3 support enabled */
-    native_pixmap = bo;
-
-    image = eglCreateImageKHR(glamor_egl->display,
-                              EGL_NO_CONTEXT,
-                              EGL_NATIVE_PIXMAP_KHR,
-                              native_pixmap, NULL);
-    gbm_bo_destroy(bo);
-    if (image == EGL_NO_IMAGE_KHR)
-        return 0;
-    glamor_create_texture_from_image(screen, image, &texture);
-    eglDestroyImageKHR(glamor_egl->display, image);
-
-    return texture;
-#else
-    return 0;                   /* this path should never happen */
-#endif
-}
-
 Bool
 glamor_egl_create_textured_screen(ScreenPtr screen, int handle, int stride)
 {
